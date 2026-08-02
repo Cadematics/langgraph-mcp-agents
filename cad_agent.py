@@ -36,6 +36,7 @@ class CADAgentState(TypedDict):
     max_replans: int
     execution_logs: List[str]
 
+
 HYBRID_PLANNER_PROMPT = """You are an expert Mechanical Design Automation Planner for Onshape CAD.
 Your job is to break down a user request into an explicit, ordered sequence of CAD operations.
 
@@ -52,14 +53,19 @@ TOOL SCHEMAS & DESCRIPTIONS:
 Current Onshape Model State Mirror (Local Active Context):
 {onshape_state_json}
 
-OPERATIONAL GUIDE FOR GEOMETRY:
-1. HOLLOW CUBES / RECTANGULAR BLOCKS WITH HOLES:
-   - Step 1: Use `create_rectangle_with_hole_sketch` (params: doc_id, workspace_id, element_id, width_cm, height_cm, hole_diameter_cm).
+OPERATIONAL GUIDE FOR GEOMETRY & TOOL SELECTION:
+1. SOLID CUBES / RECTANGLES / SQUARES / BLOCKS:
+   - Step 1: Use `create_rectangle_sketch` (params: doc_id, workspace_id, element_id, width_cm, height_cm, sketch_name).
    - Step 2: Use `extrude_sketch` (params: doc_id, workspace_id, element_id, sketch_feature_id, depth_cm).
-2. SOLID CYLINDERS / CIRCLES:
-   - Step 1: Use `create_circle_sketch`.
-   - Step 2: Use `extrude_sketch`.
-3. META / INFORMATIONAL QUESTIONS:
+2. HOLLOW CUBES / RECTANGULAR BLOCKS WITH HOLES:
+   - Step 1: Use `create_rectangle_with_hole_sketch` (params: doc_id, workspace_id, element_id, width_cm, height_cm, hole_diameter_cm, sketch_name).
+   - Step 2: Use `extrude_sketch` (params: doc_id, workspace_id, element_id, sketch_feature_id, depth_cm).
+3. SOLID CYLINDERS / CIRCLES / DISKS:
+   - Step 1: Use `create_circle_sketch` (params: doc_id, workspace_id, element_id, diameter_cm or radius_cm, sketch_name).
+   - Step 2: Use `extrude_sketch` (params: doc_id, workspace_id, element_id, sketch_feature_id, depth_cm).
+4. ADVANCED CAD OPERATIONS & RAW API CALLS:
+   - If a requested operation is not covered by standard macro tools above, use raw REST tools like `onshape_api_call` or `onshape_api_search`.
+5. META / INFORMATIONAL QUESTIONS:
    - If the user asks informational questions (e.g., 'what are the available tools?'), use `onshape_get_started` or `onshape_list_resources`.
 
 Output a valid structured Plan containing step_id, description, tool_name, and tool_args."""
@@ -76,6 +82,7 @@ Current Onshape Model State Mirror:
 {onshape_state_json}
 
 Output an updated structured Plan to recover from this failure."""
+
 
 def plan_steps_node(state: CADAgentState, llm: BaseChatModel) -> Dict[str, Any]:
     """Planner Node: Generates or updates the step-by-step CAD plan with state context."""
@@ -148,6 +155,7 @@ def plan_steps_node(state: CADAgentState, llm: BaseChatModel) -> Dict[str, Any]:
             "execution_logs": state.get("execution_logs", []) + [error_msg]
         }
 
+
 async def execute_step_node(state: CADAgentState, tools_map: Dict[str, BaseTool]) -> Dict[str, Any]:
     """Step Executor Node: Extracts parameters from prompt/mirror, invokes MCP tool, and updates state mirror."""
     plan = list(state["plan"])
@@ -186,15 +194,30 @@ async def execute_step_node(state: CADAgentState, tools_map: Dict[str, BaseTool]
     if final_elem:
         tool_args["element_id"] = final_elem
 
+    # Resolve sketch_feature_id: If human string name or missing, resolve to actual Onshape Feature ID
+    sketch_id_arg = tool_args.get("sketch_feature_id", "")
+    is_valid_onshape_fid = bool(sketch_id_arg and re.match(r"^F[A-Za-z0-9_\-]{10,30}$", str(sketch_id_arg)))
+
+    if tool_name == "extrude_sketch" and not is_valid_onshape_fid:
+        matched_id = None
+        # Look through recorded features in mirror for a matching sketch Feature ID
+        for feat in reversed(onshape_mirror.get("features", [])):
+            if "sketch" in feat.get("type", "").lower() and feat.get("feature_id"):
+                if sketch_id_arg and str(sketch_id_arg).lower() in feat.get("name", "").lower():
+                    matched_id = feat["feature_id"]
+                    break
+        if not matched_id and onshape_mirror.get("last_created_sketch_id"):
+            matched_id = onshape_mirror["last_created_sketch_id"]
+        
+        if matched_id:
+            tool_args["sketch_feature_id"] = matched_id
+
     # Update active identifiers in onshape_state.json mirror
     session_mgr.update_onshape_state(
         doc_id=final_doc,
         workspace_id=final_work,
         element_id=final_elem
     )
-
-    if tool_name == "extrude_sketch" and not tool_args.get("sketch_feature_id") and onshape_mirror.get("last_created_sketch_id"):
-        tool_args["sketch_feature_id"] = onshape_mirror["last_created_sketch_id"]
 
     log_msg = f"⚡ Executing Step {idx + 1}/{len(plan)}: [{tool_name}] - {step['description']}"
     logs = state.get("execution_logs", []) + [log_msg]
@@ -242,6 +265,7 @@ async def execute_step_node(state: CADAgentState, tools_map: Dict[str, BaseTool]
 
     session_mgr.save_plan(plan)
     return {"plan": plan, "execution_logs": logs}
+
 
 def verify_step_node(state: CADAgentState) -> Dict[str, Any]:
     """CAD Evaluator Node."""

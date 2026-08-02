@@ -1,0 +1,38 @@
+{
+  "session_id": "5290a7af-f257-449c-8389-229883498da4",
+  "document_id": "6fabc0118136a1b41f69f2b8",
+  "workspace_id": "787631b2571c5c29d6c07a6f",
+  "element_id": "8e6f891cb99f3c612919b517",
+  "last_created_sketch_id": "FmloBNzPYbvhEXU_0",
+  "last_created_feature_id": "FmloBNzPYbvhEXU_0",
+  "features": [
+    {
+      "name": "Create a square sketch on the Top plane with 2 cm sides.",
+      "feature_id": "FwGt3BlEx11sHAm_0",
+      "type": "create_rectangle_sketch",
+      "parameters": {
+        "doc_id": "6fabc0118136a1b41f69f2b8",
+        "workspace_id": "787631b2571c5c29d6c07a6f",
+        "element_id": "8e6f891cb99f3c612919b517",
+        "width_cm": 2.0,
+        "height_cm": 2.0,
+        "sketch_name": "Square Sketch",
+        "x_center_cm": 0.0,
+        "y_center_cm": 0.0
+      }
+    },
+    {
+      "name": "Extrude the square sketch to create a cube with 2 cm depth.",
+      "feature_id": "FmloBNzPYbvhEXU_0",
+      "type": "extrude_sketch",
+      "parameters": {
+        "doc_id": "6fabc0118136a1b41f69f2b8",
+        "workspace_id": "787631b2571c5c29d6c07a6f",
+        "element_id": "8e6f891cb99f3c612919b517",
+        "sketch_feature_id": "FwGt3BlEx11sHAm_0",
+        "depth_cm": 2.0,
+        "extrude_name": "Cube Extrusion"
+      }
+    }
+  ]
+}
