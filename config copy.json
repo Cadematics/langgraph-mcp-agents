@@ -1,0 +1,27 @@
+{
+  "onshape": {
+    "command": "npx",
+    "args": [
+      "--yes",
+      "onshape-mcp"
+    ],
+    "env": {
+      "ONSHAPE_MCP_AUTH__ACCESS_KEY": "on_bYfDyZ0QtxjnQOAqlSPTD",
+      "ONSHAPE_MCP_AUTH__SECRET_KEY": "aeSrt2XWfSFFTxOwiUMtHKnpaNNQfBrqAnekcX7VgSqeo2xL"
+    },
+    "transport": "stdio"
+  },
+  "onshape_macros": {
+    "command": "./.venv/bin/python",
+    "args": [
+      "mcp_server_onshape_macros.py"
+    ],
+    
+    "env": {
+      "ONSHAPE_ACCESS_KEY": "on_bYfDyZ0QtxjnQOAqlSPTD",
+      "ONSHAPE_SECRET_KEY": "aeSrt2XWfSFFTxOwiUMtHKnpaNNQfBrqAnekcX7VgSqeo2xL"
+    },
+    "transport": "stdio"
+  }
+}
+
