@@ -25,6 +25,7 @@ from dotenv import load_dotenv
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from utils import random_uuid
 from cad_agent import build_cad_orchestrator_graph, CADAgentState
+from session_manager import SessionManager
 
 load_dotenv(override=True)
 
@@ -57,8 +58,7 @@ def load_config_from_json():
     try:
         if os.path.exists(CONFIG_FILE_PATH):
             with open(CONFIG_FILE_PATH, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-                return cfg
+                return json.load(f)
         else:
             save_config_to_json(default_config)
             return default_config
@@ -106,7 +106,7 @@ else:
     st.set_page_config(page_title="Plan-and-Execute CAD Agent", page_icon="🏗️", layout="wide")
 
 st.title("🏗️ Plan ➔ Execute ➔ Validate CAD Orchestrator")
-st.markdown("✨ Sequential, self-healing CAD agent architecture powered by LangGraph & MCP.")
+st.markdown("✨ Sequential, self-healing CAD agent architecture with persistent state mirroring.")
 
 OUTPUT_TOKEN_INFO = {
     "gpt-4o": {"max_tokens": 16000},
@@ -134,25 +134,34 @@ if "pending_mcp_config" not in st.session_state:
 if "thread_id" not in st.session_state:
     st.session_state.thread_id = random_uuid()
 
+# Initialize local session file manager
+session_mgr = SessionManager(st.session_state.thread_id)
+
 async def cleanup_mcp_client():
-    """Safely closes active MCP client instances."""
+    """Safely closes active MCP client instances and stdio transports."""
     if "mcp_client" in st.session_state and st.session_state.mcp_client is not None:
         mc = st.session_state.mcp_client
         if isinstance(mc, dict):
-            for s_name, client in mc.items():
+            for client in mc.values():
                 try:
-                    await client.close()
+                    await client.__aexit__(None, None, None)
                 except Exception:
-                    pass
+                    try:
+                        await client.close()
+                    except Exception:
+                        pass
         else:
             try:
-                await mc.close()
+                await mc.__aexit__(None, None, None)
             except Exception:
-                pass
+                try:
+                    await mc.close()
+                except Exception:
+                    pass
         st.session_state.mcp_client = None
 
 async def initialize_session(mcp_config=None):
-    """Initializes MultiServerMCPClient per server, extracts tools safely, and builds CAD agent."""
+    """Initializes MultiServerMCPClient per server with persistent context and builds CAD orchestrator."""
     await cleanup_mcp_client()
 
     st.session_state.init_error = None
@@ -171,18 +180,15 @@ async def initialize_session(mcp_config=None):
         srv_cfg = dict(srv_raw_cfg)
         cmd = srv_cfg.get("command", "")
 
-        # Auto-resolve generic python commands to current active virtual environment python
         if cmd in ["python", "./.venv/bin/python", "python3"] or cmd.endswith("/python"):
             srv_cfg["command"] = sys.executable
 
-        # Resolve relative python script paths in arguments to absolute file paths
         args = list(srv_cfg.get("args", []))
         for i, arg in enumerate(args):
             if isinstance(arg, str) and arg.endswith(".py") and os.path.exists(os.path.abspath(arg)):
                 args[i] = os.path.abspath(arg)
         srv_cfg["args"] = args
 
-        # Ensure both environment variable key patterns are supplied
         env = dict(srv_cfg.get("env", {}))
         if "ONSHAPE_ACCESS_KEY" in env:
             env["ONSHAPE_MCP_AUTH__ACCESS_KEY"] = env.get("ONSHAPE_MCP_AUTH__ACCESS_KEY") or env["ONSHAPE_ACCESS_KEY"]
@@ -193,36 +199,30 @@ async def initialize_session(mcp_config=None):
         try:
             single_client = MultiServerMCPClient({srv_name: srv_cfg})
             
-            # Extract tools for this individual server
+            # Enter persistent context to keep stdio channels open
+            await single_client.__aenter__()
+
             res = single_client.get_tools()
             if inspect.isawaitable(res):
                 srv_tools = await res
             else:
                 srv_tools = res
 
-            if not srv_tools:
-                async with single_client:
-                    res = single_client.get_tools()
-                    if inspect.isawaitable(res):
-                        srv_tools = await res
-                    else:
-                        srv_tools = res
-
             if srv_tools:
                 all_tools.extend(srv_tools)
                 clients[srv_name] = single_client
                 st.session_state.server_status[srv_name] = f"✅ Loaded {len(srv_tools)} tools"
             else:
-                st.session_state.server_status[srv_name] = "⚠️ Server connected but returned 0 tools"
-                server_errors.append(f"Server '{srv_name}': Returned 0 tools. Check command arguments or credentials.")
+                st.session_state.server_status[srv_name] = "⚠️ Returned 0 tools"
+                server_errors.append(f"Server '{srv_name}': Returned 0 tools.")
 
         except Exception as e:
             tb_str = traceback.format_exc()
             st.session_state.server_status[srv_name] = f"❌ Error: {str(e)}"
-            server_errors.append(f"Server '{srv_name}' Connection Exception: {str(e)}\n{tb_str}")
+            server_errors.append(f"Server '{srv_name}' Connection Error: {str(e)}\n{tb_str}")
 
     if not all_tools:
-        err_combined = "\n\n".join(server_errors) if server_errors else "No tools returned from any registered MCP server."
+        err_combined = "\n\n".join(server_errors) if server_errors else "No tools returned from MCP servers."
         st.session_state.init_error = err_combined
         st.session_state.init_traceback = err_combined
         st.session_state.session_initialized = False
@@ -273,6 +273,7 @@ async def process_cad_query(query: str, status_container):
 
     initial_state: CADAgentState = {
         "messages": [HumanMessage(content=query)],
+        "session_id": st.session_state.thread_id,
         "user_prompt": query,
         "available_tools": tools_info,
         "plan": [],
@@ -345,9 +346,7 @@ with st.sidebar:
     st.divider()
     st.subheader("🔧 Tool Management")
 
-    # Add MCP Tool Expander
     with st.expander("🧰 Add MCP Tool (JSON)", expanded=False):
-        st.markdown("Enter **one tool** configuration in JSON format:")
         example_json = {
             "onshape_macros": {
                 "command": "python",
@@ -369,12 +368,11 @@ with st.sidebar:
                     parsed = parsed["mcpServers"]
                 for name, cfg in parsed.items():
                     st.session_state.pending_mcp_config[name] = cfg
-                st.success("✅ Tool added to pending configuration! Click 'Apply Settings' below.")
+                st.success("✅ Tool added! Click 'Apply Settings' below.")
                 st.rerun()
             except Exception as e:
                 st.error(f"Invalid JSON: {str(e)}")
 
-    # Registered Servers Config Expander
     with st.expander("📋 Registered MCP Servers Config", expanded=True):
         for server_name in list(st.session_state.pending_mcp_config.keys()):
             status_badge = st.session_state.get("server_status", {}).get(server_name, "")
@@ -382,10 +380,9 @@ with st.sidebar:
             c1, c2 = st.columns([7, 3])
             if c2.button("Delete", key=f"del_{server_name}"):
                 del st.session_state.pending_mcp_config[server_name]
-                st.success(f"Deleted {server_name}. Click 'Apply Settings'.")
+                st.success(f"Deleted {server_name}.")
                 st.rerun()
 
-    # Active Tools Inspector Expander
     with st.expander("🛠️ Active Loaded MCP Tools Inspector", expanded=True):
         raw_tools = st.session_state.get("raw_tools", [])
         if raw_tools:
@@ -394,7 +391,20 @@ with st.sidebar:
                 desc_snippet = t.description[:70] + "..." if len(t.description) > 70 else t.description
                 st.markdown(f"• **`{t.name}`**: _{desc_snippet}_")
         else:
-            st.info("No active tools loaded yet. Click 'Apply Settings / Initialize' below.")
+            st.info("No active tools loaded yet. Click 'Apply Settings / Initialize'.")
+
+    st.divider()
+    st.subheader("📁 Session Memory & Onshape State Mirror")
+    with st.expander(f"📂 Folder: `sessions/{st.session_state.thread_id[:8]}...`", expanded=True):
+        current_state_mirror = session_mgr.get_onshape_state()
+        st.markdown(f"**Active Doc:** `{current_state_mirror.get('document_id') or 'None'}`")
+        st.markdown(f"**Active Workspace:** `{current_state_mirror.get('workspace_id') or 'None'}`")
+        st.markdown(f"**Active Element:** `{current_state_mirror.get('element_id') or 'None'}`")
+        st.markdown(f"**Last Sketch ID:** `{current_state_mirror.get('last_created_sketch_id') or 'None'}`")
+        st.markdown(f"**Created Features:** `{len(current_state_mirror.get('features', []))}`")
+
+        if st.checkbox("Show raw onshape_state.json"):
+            st.json(current_state_mirror)
 
     st.divider()
     st.subheader("📊 System Actions")
@@ -406,7 +416,6 @@ with st.sidebar:
             st.warning("🔄 Connecting MCP tools and building graph...")
             progress_bar = st.progress(0)
 
-            # Resolve python command paths before saving
             cfg_to_save = dict(st.session_state.pending_mcp_config)
             for s_name, s_cfg in cfg_to_save.items():
                 if s_cfg.get("command") in ["python", "./.venv/bin/python", "python3"] or str(s_cfg.get("command", "")).endswith("/python"):
@@ -451,15 +460,15 @@ if not st.session_state.session_initialized and not st.session_state.get("init_e
 
 print_message_history()
 
-user_query = st.chat_input("💬 Enter CAD prompt (e.g. 'Build a 4cm tall cylinder with a 2cm outer diameter and 1cm center hole')")
+user_query = st.chat_input("💬 Enter CAD prompt (e.g. 'Build a 5cm cube with a 2cm hole in the center')")
 
 if user_query:
     if st.session_state.session_initialized:
         st.chat_message("user", avatar="🧑‍💻").markdown(user_query)
-        
+
         with st.chat_message("assistant", avatar="🤖"):
             status_box = st.status("🚀 Running Plan-and-Execute CAD Workflow...", expanded=True)
-            
+
             plan, logs = st.session_state.event_loop.run_until_complete(
                 process_cad_query(user_query, status_box)
             )
@@ -482,5 +491,9 @@ if user_query:
                 "content": summary_text,
                 "plan": plan
             })
+
+            # Save full history to local folder
+            session_mgr.save_history(st.session_state.history)
+
     else:
         st.warning("⚠️ Agent is not initialized. Please click 'Apply Settings / Initialize' in the sidebar.")
