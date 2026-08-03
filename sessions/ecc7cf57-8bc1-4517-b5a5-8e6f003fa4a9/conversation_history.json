@@ -1,0 +1,125 @@
+[
+  {
+    "role": "user",
+    "content": "we are going to work on the file: Doc: 2522d956c5986dc4a4d60e20\nWork: 11aa163db6bf10fd2aa0d97c\nElem: ac775850a6fea04e0606985d\n\"create a rectangle on the top plane the rectangle is 2 cm along x and 3 cm along y\n"
+  },
+  {
+    "role": "assistant",
+    "content": "### 🏁 Dynamic CAD Script Summary\nCompleted **1/1** script steps successfully.\n\n* ✅ **Step 1:** Create a sketch on the Top plane with a rectangle 2 cm along the x-axis and 3 cm along the y-axis.\n",
+    "plan": [
+      {
+        "step_id": 1,
+        "description": "Create a sketch on the Top plane with a rectangle 2 cm along the x-axis and 3 cm along the y-axis.",
+        "tool_name": "python_script_execution",
+        "status": "success",
+        "error_feedback": "",
+        "script_path": "sessions/ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9/step_1_attempt_1.py",
+        "python_code": "import os\nimport sys\nimport json\nimport requests\nfrom requests.auth import HTTPBasicAuth\n\n# Constants\nDOCUMENT_ID = \"2522d956c5986dc4a4d60e20\"\nWORKSPACE_ID = \"11aa163db6bf10fd2aa0d97c\"\nELEMENT_ID = \"ac775850a6fea04e0606985d\"\n\n# Onshape API endpoint\nurl = f\"https://cad.onshape.com/api/v16/partstudios/d/{DOCUMENT_ID}/w/{WORKSPACE_ID}/e/{ELEMENT_ID}/features\"\n\n# Rectangle dimensions in meters\nw_m = 0.02  # 2 cm\nh_m = 0.03  # 3 cm\nhw = w_m / 2.0\nhh = h_m / 2.0\nx_min, x_max = -hw, hw\ny_min, y_max = -hh, hh\n\n# Payload for creating a rectangle sketch\npayload = {\n    \"feature\": {\n        \"btType\": \"BTMSketch-151\",\n        \"featureType\": \"newSketch\",\n        \"name\": \"Rectangle Sketch\",\n        \"parameters\": [\n            {\n                \"btType\": \"BTMParameterQueryList-148\",\n                \"parameterId\": \"sketchPlane\",\n                \"queries\": [\n                    {\n                        \"btType\": \"BTMIndividualQuery-138\",\n                        \"queryString\": \"query=qCreatedBy(makeId('Top'), EntityType.FACE);\"\n                    }\n                ]\n            }\n        ],\n        \"entities\": [\n            # Line 1: Bottom (+X)\n            {\n                \"btType\": \"BTMSketchCurveSegment-155\",\n                \"geometry\": {\"btType\": \"BTCurveGeometryLine-117\", \"pntX\": x_min, \"pntY\": y_min, \"dirX\": 1.0, \"dirY\": 0.0},\n                \"startPointId\": \"lineBottom.start\", \"endPointId\": \"lineBottom.end\",\n                \"startParam\": 0.0, \"endParam\": w_m, \"entityId\": \"lineBottom\"\n            },\n            # Line 2: Right (+Y)\n            {\n                \"btType\": \"BTMSketchCurveSegment-155\",\n                \"geometry\": {\"btType\": \"BTCurveGeometryLine-117\", \"pntX\": x_max, \"pntY\": y_min, \"dirX\": 0.0, \"dirY\": 1.0},\n                \"startPointId\": \"lineRight.start\", \"endPointId\": \"lineRight.end\",\n                \"startParam\": 0.0, \"endParam\": h_m, \"entityId\": \"lineRight\"\n            },\n            # Line 3: Top (-X)\n            {\n                \"btType\": \"BTMSketchCurveSegment-155\",\n                \"geometry\": {\"btType\": \"BTCurveGeometryLine-117\", \"pntX\": x_max, \"pntY\": y_max, \"dirX\": -1.0, \"dirY\": 0.0},\n                \"startPointId\": \"lineTop.start\", \"endPointId\": \"lineTop.end\",\n                \"startParam\": 0.0, \"endParam\": w_m, \"entityId\": \"lineTop\"\n            },\n            # Line 4: Left (-Y)\n            {\n                \"btType\": \"BTMSketchCurveSegment-155\",\n                \"geometry\": {\"btType\": \"BTCurveGeometryLine-117\", \"pntX\": x_min, \"pntY\": y_max, \"dirX\": 0.0, \"dirY\": -1.0},\n                \"startPointId\": \"lineLeft.start\", \"endPointId\": \"lineLeft.end\",\n                \"startParam\": 0.0, \"endParam\": h_m, \"entityId\": \"lineLeft\"\n            }\n        ],\n        \"constraints\": [\n            {\n                \"btType\": \"BTMSketchConstraint-2\",\n                \"constraintType\": \"COINCIDENT\",\n                \"parameters\": [\n                    {\"btType\": \"BTMParameterString-149\", \"parameterId\": \"localFirst\", \"value\": \"lineBottom.end\"},\n                    {\"btType\": \"BTMParameterString-149\", \"parameterId\": \"localSecond\", \"value\": \"lineRight.start\"}\n                ]\n            },\n            {\n                \"btType\": \"BTMSketchConstraint-2\",\n                \"constraintType\": \"COINCIDENT\",\n                \"parameters\": [\n                    {\"btType\": \"BTMParameterString-149\", \"parameterId\": \"localFirst\", \"value\": \"lineRight.end\"},\n                    {\"btType\": \"BTMParameterString-149\", \"parameterId\": \"localSecond\", \"value\": \"lineTop.start\"}\n                ]\n            },\n            {\n                \"btType\": \"BTMSketchConstraint-2\",\n                \"constraintType\": \"COINCIDENT\",\n                \"parameters\": [\n                    {\"btType\": \"BTMParameterString-149\", \"parameterId\": \"localFirst\", \"value\": \"lineTop.end\"},\n                    {\"btType\": \"BTMParameterString-149\", \"parameterId\": \"localSecond\", \"value\": \"lineLeft.start\"}\n                ]\n            },\n            {\n                \"btType\": \"BTMSketchConstraint-2\",\n                \"constraintType\": \"COINCIDENT\",\n                \"parameters\": [\n                    {\"btType\": \"BTMParameterString-149\", \"parameterId\": \"localFirst\", \"value\": \"lineLeft.end\"},\n                    {\"btType\": \"BTMParameterString-149\", \"parameterId\": \"localSecond\", \"value\": \"lineBottom.start\"}\n                ]\n            }\n        ]\n    }\n}\n\n# Make the API request\ntry:\n    response = requests.post(\n        url,\n        headers={'Content-Type': 'application/json'},\n        auth=HTTPBasicAuth(os.environ.get('ONSHAPE_ACCESS_KEY'), os.environ.get('ONSHAPE_SECRET_KEY')),\n        data=json.dumps(payload)\n    )\n    response.raise_for_status()\n    feature_id = response.json()['feature']['featureId']\n    print(f\"SUCCESS: Feature ID: {feature_id}\")\nexcept requests.exceptions.RequestException as e:\n    print(f\"ERROR: {e}\", file=sys.stderr)\n    sys.exit(1)\n"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "draw a 3 cm diameter circle on the Top plane"
+  },
+  {
+    "role": "assistant",
+    "content": "### 🏁 Dynamic CAD Script Summary\nCompleted **1/1** script steps successfully.\n\n* ✅ **Step 1:** Create a sketch on the Top plane with a circle of 3 cm diameter.\n",
+    "plan": [
+      {
+        "step_id": 1,
+        "description": "Create a sketch on the Top plane with a circle of 3 cm diameter.",
+        "tool_name": "python_script_execution",
+        "status": "success",
+        "error_feedback": "",
+        "script_path": "sessions/ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9/step_1_attempt_1.py",
+        "python_code": "import os\nimport sys\nimport json\nimport requests\nfrom requests.auth import HTTPBasicAuth\n\n# Define the Onshape API endpoint URL\nurl = \"https://cad.onshape.com/api/v16/partstudios/d/2522d956c5986dc4a4d60e20/w/11aa163db6bf10fd2aa0d97c/e/ac775850a6fea04e0606985d/features\"\n\n# Define the payload for creating a circle sketch\npayload = {\n    \"feature\": {\n        \"btType\": \"BTMSketch-151\",\n        \"featureType\": \"newSketch\",\n        \"name\": \"Base Circle Sketch\",\n        \"parameters\": [\n            {\n                \"btType\": \"BTMParameterQueryList-148\",\n                \"parameterId\": \"sketchPlane\",\n                \"queries\": [\n                    {\n                        \"btType\": \"BTMIndividualQuery-138\",\n                        \"queryString\": \"query=qCreatedBy(makeId('Top'), EntityType.FACE);\"\n                    }\n                ]\n            }\n        ],\n        \"entities\": [\n            {\n                \"btType\": \"BTMSketchCurve-4\",\n                \"geometry\": {\n                    \"btType\": \"BTCurveGeometryCircle-115\",\n                    \"radius\": 0.015,  # radius in meters (3 cm diameter)\n                    \"xCenter\": 0.0,\n                    \"yCenter\": 0.0,\n                    \"xDir\": 1.0,\n                    \"yDir\": 0.0,\n                    \"clockwise\": False\n                },\n                \"centerId\": \"circleCenter\",\n                \"entityId\": \"circle1\"\n            }\n        ],\n        \"constraints\": []\n    }\n}\n\ntry:\n    # Make the POST request to create the sketch\n    response = requests.post(\n        url,\n        headers={'Content-Type': 'application/json'},\n        auth=HTTPBasicAuth(os.environ.get('ONSHAPE_ACCESS_KEY'), os.environ.get('ONSHAPE_SECRET_KEY')),\n        data=json.dumps(payload)\n    )\n\n    # Check if the request was successful\n    if response.status_code in [200, 201]:\n        feature_id = response.json()['feature']['featureId']\n        print(f\"SUCCESS: Feature ID: {feature_id}\")\n    else:\n        print(f\"ERROR: {response.text}\", file=sys.stderr)\n        sys.exit(1)\n\nexcept Exception as e:\n    print(f\"EXCEPTION: {str(e)}\", file=sys.stderr)\n    sys.exit(1)"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "extrude the rectangle by 5 cm up the z acess"
+  },
+  {
+    "role": "assistant",
+    "content": "### 🏁 Dynamic CAD Script Summary\nCompleted **1/1** script steps successfully.\n\n* ✅ **Step 1:** Extrude the rectangle sketch on the Top plane by 5 cm along the z-axis.\n",
+    "plan": [
+      {
+        "step_id": 1,
+        "description": "Extrude the rectangle sketch on the Top plane by 5 cm along the z-axis.",
+        "tool_name": "python_script_execution",
+        "status": "success",
+        "error_feedback": "",
+        "script_path": "sessions/ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9/step_1_attempt_1.py",
+        "python_code": "import os\nimport sys\nimport json\nimport requests\nfrom requests.auth import HTTPBasicAuth\n\n# Constants\nDOCUMENT_ID = \"2522d956c5986dc4a4d60e20\"\nWORKSPACE_ID = \"11aa163db6bf10fd2aa0d97c\"\nELEMENT_ID = \"ac775850a6fea04e0606985d\"\nRECTANGLE_SKETCH_FEATURE_ID = \"FAlO6UmJGVAVUUV_0\"\n\n# Endpoint URL\nurl = f\"https://cad.onshape.com/api/v16/partstudios/d/{DOCUMENT_ID}/w/{WORKSPACE_ID}/e/{ELEMENT_ID}/features\"\n\n# Extrude payload\npayload = {\n    \"feature\": {\n        \"btType\": \"BTMFeature-134\",\n        \"featureType\": \"extrude\",\n        \"name\": \"Extrude Feature\",\n        \"parameters\": [\n            {\n                \"btType\": \"BTMParameterEnum-145\",\n                \"parameterId\": \"extrudeType\",\n                \"value\": \"BLIND\"\n            },\n            {\n                \"btType\": \"BTMParameterQuantity-147\",\n                \"parameterId\": \"depth\",\n                \"expression\": \"5.0 cm\"\n            },\n            {\n                \"btType\": \"BTMParameterQueryList-148\",\n                \"parameterId\": \"entities\",\n                \"queries\": [\n                    {\n                        \"btType\": \"BTMIndividualSketchRegionQuery-140\",\n                        \"featureId\": RECTANGLE_SKETCH_FEATURE_ID\n                    }\n                ]\n            }\n        ]\n    }\n}\n\ntry:\n    # Make the POST request to create the extrude feature\n    response = requests.post(\n        url,\n        headers={'Content-Type': 'application/json'},\n        auth=HTTPBasicAuth(os.environ.get('ONSHAPE_ACCESS_KEY'), os.environ.get('ONSHAPE_SECRET_KEY')),\n        data=json.dumps(payload)\n    )\n\n    # Check if the request was successful\n    if response.status_code in [200, 201]:\n        feature_id = response.json()['feature']['featureId']\n        print(f\"SUCCESS: Feature ID: {feature_id}\")\n    else:\n        print(f\"ERROR: {response.text}\", file=sys.stderr)\n        sys.exit(1)\n\nexcept Exception as e:\n    print(f\"EXCEPTION: {str(e)}\", file=sys.stderr)\n    sys.exit(1)\n"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "now extrude the circle sketch by 1 m up the z axis"
+  },
+  {
+    "role": "assistant",
+    "content": "### 🏁 Dynamic CAD Script Summary\nCompleted **1/1** script steps successfully.\n\n* ✅ **Step 1:** Extrude the circle sketch on the Top plane by 1 meter along the z-axis.\n",
+    "plan": [
+      {
+        "step_id": 1,
+        "description": "Extrude the circle sketch on the Top plane by 1 meter along the z-axis.",
+        "tool_name": "python_script_execution",
+        "status": "success",
+        "error_feedback": "",
+        "script_path": "sessions/ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9/step_1_attempt_1.py",
+        "python_code": "import os\nimport sys\nimport json\nimport requests\nfrom requests.auth import HTTPBasicAuth\n\n# Constants for Onshape API\nDOCUMENT_ID = \"2522d956c5986dc4a4d60e20\"\nWORKSPACE_ID = \"11aa163db6bf10fd2aa0d97c\"\nELEMENT_ID = \"ac775850a6fea04e0606985d\"\nCIRCLE_SKETCH_FEATURE_ID = \"Fj2f4vMiQ89O5y8_0\"  # Feature ID of the circle sketch\n\n# Onshape API endpoint for creating features\nurl = f\"https://cad.onshape.com/api/v16/partstudios/d/{DOCUMENT_ID}/w/{WORKSPACE_ID}/e/{ELEMENT_ID}/features\"\n\n# Payload for extruding the circle sketch\npayload = {\n    \"feature\": {\n        \"btType\": \"BTMFeature-134\",\n        \"featureType\": \"extrude\",\n        \"name\": \"Extrude Circle Feature\",\n        \"parameters\": [\n            {\n                \"btType\": \"BTMParameterEnum-145\",\n                \"parameterId\": \"extrudeType\",\n                \"value\": \"BLIND\"\n            },\n            {\n                \"btType\": \"BTMParameterQuantity-147\",\n                \"parameterId\": \"depth\",\n                \"expression\": \"1.0 m\"\n            },\n            {\n                \"btType\": \"BTMParameterQueryList-148\",\n                \"parameterId\": \"entities\",\n                \"queries\": [\n                    {\n                        \"btType\": \"BTMIndividualSketchRegionQuery-140\",\n                        \"featureId\": CIRCLE_SKETCH_FEATURE_ID\n                    }\n                ]\n            }\n        ]\n    }\n}\n\ntry:\n    # Make the POST request to the Onshape API\n    response = requests.post(\n        url,\n        headers={'Content-Type': 'application/json'},\n        auth=HTTPBasicAuth(os.environ.get('ONSHAPE_ACCESS_KEY'), os.environ.get('ONSHAPE_SECRET_KEY')),\n        data=json.dumps(payload)\n    )\n\n    # Check if the request was successful\n    if response.status_code in [200, 201]:\n        feature_id = response.json()['feature']['featureId']\n        print(f\"SUCCESS: Feature ID: {feature_id}\")\n    else:\n        print(f\"ERROR: {response.text}\", file=sys.stderr)\n        sys.exit(1)\n\nexcept Exception as e:\n    print(f\"EXCEPTION: {str(e)}\", file=sys.stderr)\n    sys.exit(1)\n"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "change the height of the created cylinder to 1 cm "
+  },
+  {
+    "role": "assistant",
+    "content": "### 🏁 Dynamic CAD Script Summary\nCompleted **1/1** script steps successfully.\n\n* ✅ **Step 1:** Edit the extrusion feature of the circle sketch to change the height from 1 meter to 1 cm.\n",
+    "plan": [
+      {
+        "step_id": 1,
+        "description": "Edit the extrusion feature of the circle sketch to change the height from 1 meter to 1 cm.",
+        "tool_name": "python_script_execution",
+        "status": "success",
+        "error_feedback": "",
+        "script_path": "sessions/ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9/step_1_attempt_1.py",
+        "python_code": "import os\nimport sys\nimport json\nimport requests\nfrom requests.auth import HTTPBasicAuth\n\n# Constants\nDOCUMENT_ID = \"2522d956c5986dc4a4d60e20\"\nWORKSPACE_ID = \"11aa163db6bf10fd2aa0d97c\"\nELEMENT_ID = \"ac775850a6fea04e0606985d\"\nFEATURE_ID = \"Fx4JDE0nbDx8tes_1\"  # Feature ID of the circle extrusion\n\n# Endpoint URL\nurl = f\"https://cad.onshape.com/api/v16/partstudios/d/{DOCUMENT_ID}/w/{WORKSPACE_ID}/e/{ELEMENT_ID}/features/featureid/{FEATURE_ID}\"\n\n# Payload to update the extrusion height to 1 cm (0.01 meters)\npayload = {\n    \"feature\": {\n        \"btType\": \"BTMFeature-134\",\n        \"featureType\": \"extrude\",\n        \"name\": \"Extrude Feature\",\n        \"parameters\": [\n            {\n                \"btType\": \"BTMParameterEnum-145\",\n                \"parameterId\": \"extrudeType\",\n                \"value\": \"BLIND\"\n            },\n            {\n                \"btType\": \"BTMParameterQuantity-147\",\n                \"parameterId\": \"depth\",\n                \"expression\": \"0.01 m\"\n            },\n            {\n                \"btType\": \"BTMParameterQueryList-148\",\n                \"parameterId\": \"entities\",\n                \"queries\": [\n                    {\n                        \"btType\": \"BTMIndividualSketchRegionQuery-140\",\n                        \"featureId\": \"Fj2f4vMiQ89O5y8_0\"  # Sketch feature ID of the circle\n                    }\n                ]\n            }\n        ]\n    }\n}\n\n# Make the API request\ntry:\n    response = requests.post(\n        url,\n        headers={'Content-Type': 'application/json'},\n        auth=HTTPBasicAuth(os.environ.get('ONSHAPE_ACCESS_KEY'), os.environ.get('ONSHAPE_SECRET_KEY')),\n        data=json.dumps(payload)\n    )\n\n    # Check response status\n    if response.status_code in [200, 201]:\n        feature_id = response.json()['feature']['featureId']\n        print(f\"SUCCESS: Feature ID: {feature_id}\")\n    else:\n        print(f\"ERROR: {response.text}\", file=sys.stderr)\n        sys.exit(1)\n\nexcept Exception as e:\n    print(f\"EXCEPTION: {str(e)}\", file=sys.stderr)\n    sys.exit(1)"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "create a cut of 1 cm diameter inside the cylinder along the z access"
+  },
+  {
+    "role": "assistant",
+    "content": "### 🏁 Dynamic CAD Script Summary\nCompleted **1/2** script steps successfully.\n\n* ✅ **Step 1:** Create a sketch on the top face of the existing cylinder with a circle of 1 cm diameter centered at the origin.\n* ❌ **Step 2:** Extrude cut the circle sketch through the entire depth of the cylinder along the z-axis.\n",
+    "plan": [
+      {
+        "step_id": 1,
+        "description": "Create a sketch on the top face of the existing cylinder with a circle of 1 cm diameter centered at the origin.",
+        "tool_name": "python_script_execution",
+        "status": "success",
+        "error_feedback": "",
+        "script_path": "sessions/ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9/step_1_attempt_1.py",
+        "python_code": "import os\nimport sys\nimport json\nimport requests\nfrom requests.auth import HTTPBasicAuth\n\n# Define the Onshape API endpoint URL\nurl = \"https://cad.onshape.com/api/v16/partstudios/d/2522d956c5986dc4a4d60e20/w/11aa163db6bf10fd2aa0d97c/e/ac775850a6fea04e0606985d/features\"\n\n# Define the payload for creating a circle sketch on the top face of the cylinder\npayload = {\n    \"feature\": {\n        \"btType\": \"BTMSketch-151\",\n        \"featureType\": \"newSketch\",\n        \"name\": \"Top Face Circle Sketch\",\n        \"parameters\": [\n            {\n                \"btType\": \"BTMParameterQueryList-148\",\n                \"parameterId\": \"sketchPlane\",\n                \"queries\": [\n                    {\n                        \"btType\": \"BTMIndividualQuery-138\",\n                        \"queryString\": \"query=qCreatedBy(makeId('Fx4JDE0nbDx8tes_1'), EntityType.FACE);\"\n                    }\n                ]\n            }\n        ],\n        \"entities\": [\n            {\n                \"btType\": \"BTMSketchCurve-4\",\n                \"geometry\": {\n                    \"btType\": \"BTCurveGeometryCircle-115\",\n                    \"radius\": 0.005,  # radius in meters (1 cm diameter)\n                    \"xCenter\": 0.0,\n                    \"yCenter\": 0.0,\n                    \"xDir\": 1.0,\n                    \"yDir\": 0.0,\n                    \"clockwise\": False\n                },\n                \"centerId\": \"circleCenter\",\n                \"entityId\": \"circle1\"\n            }\n        ],\n        \"constraints\": []\n    }\n}\n\ntry:\n    # Make the POST request to create the sketch\n    response = requests.post(\n        url,\n        headers={'Content-Type': 'application/json'},\n        auth=HTTPBasicAuth(os.environ.get('ONSHAPE_ACCESS_KEY'), os.environ.get('ONSHAPE_SECRET_KEY')),\n        data=json.dumps(payload)\n    )\n\n    # Check if the request was successful\n    if response.status_code in [200, 201]:\n        feature_id = response.json()['feature']['featureId']\n        print(f\"SUCCESS: Feature ID: {feature_id}\")\n    else:\n        print(f\"ERROR: {response.text}\", file=sys.stderr)\n        sys.exit(1)\n\nexcept Exception as e:\n    print(f\"EXCEPTION: {str(e)}\", file=sys.stderr)\n    sys.exit(1)"
+      },
+      {
+        "step_id": 2,
+        "description": "Extrude cut the circle sketch through the entire depth of the cylinder along the z-axis.",
+        "tool_name": "python_script_execution",
+        "status": "failed",
+        "error_feedback": "Return Code: 1\nStderr: ERROR: {\n  \"moreInfoUrl\" : \"\",\n  \"message\" : \"Parameter operationType in feature FFzvfAmhW1Uu9zi_2 of type Extrude does not match its feature spec\",\n  \"status\" : 400,\n  \"code\" : 9999\n}\nStdout: ",
+        "script_path": "sessions/ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9/step_2_attempt_3.py",
+        "python_code": "import os\nimport sys\nimport json\nimport requests\nfrom requests.auth import HTTPBasicAuth\n\n# Define the Onshape API endpoint URL\nurl = \"https://cad.onshape.com/api/v16/partstudios/d/2522d956c5986dc4a4d60e20/w/11aa163db6bf10fd2aa0d97c/e/ac775850a6fea04e0606985d/features\"\n\n# Define the payload for the extrude cut operation\npayload = {\n    \"feature\": {\n        \"btType\": \"BTMFeature-134\",\n        \"featureType\": \"extrude\",\n        \"name\": \"Extrude Cut Feature\",\n        \"parameters\": [\n            {\n                \"btType\": \"BTMParameterEnum-145\",\n                \"parameterId\": \"operationType\",\n                \"value\": \"REMOVE\"\n            },\n            {\n                \"btType\": \"BTMParameterEnum-145\",\n                \"parameterId\": \"endBoundType\",\n                \"value\": \"THROUGH_ALL\"\n            },\n            {\n                \"btType\": \"BTMParameterQueryList-148\",\n                \"parameterId\": \"entities\",\n                \"queries\": [\n                    {\n                        \"btType\": \"BTMIndividualSketchRegionQuery-140\",\n                        \"featureId\": \"F1gA5HybTbQ8afn_2\"\n                    }\n                ]\n            }\n        ]\n    }\n}\n\ntry:\n    # Make the POST request to the Onshape API\n    response = requests.post(\n        url,\n        headers={'Content-Type': 'application/json'},\n        auth=HTTPBasicAuth(os.environ.get('ONSHAPE_ACCESS_KEY'), os.environ.get('ONSHAPE_SECRET_KEY')),\n        data=json.dumps(payload)\n    )\n\n    # Check if the request was successful\n    if response.status_code in [200, 201]:\n        feature_id = response.json()['feature']['featureId']\n        print(f\"SUCCESS: Feature ID: {feature_id}\")\n    else:\n        print(f\"ERROR: {response.text}\", file=sys.stderr)\n        sys.exit(1)\n\nexcept Exception as e:\n    print(f\"EXCEPTION: {str(e)}\", file=sys.stderr)\n    sys.exit(1)\n"
+      }
+    ]
+  }
+]

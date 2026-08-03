@@ -1,0 +1,58 @@
+{
+  "session_id": "ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9",
+  "document_id": "2522d956c5986dc4a4d60e20",
+  "workspace_id": "11aa163db6bf10fd2aa0d97c",
+  "element_id": "ac775850a6fea04e0606985d",
+  "last_created_sketch_id": "F1gA5HybTbQ8afn_2",
+  "last_created_feature_id": "F1gA5HybTbQ8afn_2",
+  "features": [
+    {
+      "name": "Create a sketch on the Top plane with a rectangle 2 cm along the x-axis and 3 cm along the y-axis.",
+      "feature_id": "FAlO6UmJGVAVUUV_0",
+      "type": "sketch",
+      "parameters": {
+        "script_path": "sessions/ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9/step_1_attempt_1.py"
+      }
+    },
+    {
+      "name": "Create a sketch on the Top plane with a circle of 3 cm diameter.",
+      "feature_id": "Fj2f4vMiQ89O5y8_0",
+      "type": "sketch",
+      "parameters": {
+        "script_path": "sessions/ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9/step_1_attempt_1.py"
+      }
+    },
+    {
+      "name": "Extrude the rectangle sketch on the Top plane by 5 cm along the z-axis.",
+      "feature_id": "F0T7rMvkmFwo8rU_0",
+      "type": "sketch",
+      "parameters": {
+        "script_path": "sessions/ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9/step_1_attempt_1.py"
+      }
+    },
+    {
+      "name": "Extrude the circle sketch on the Top plane by 1 meter along the z-axis.",
+      "feature_id": "Fx4JDE0nbDx8tes_1",
+      "type": "sketch",
+      "parameters": {
+        "script_path": "sessions/ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9/step_1_attempt_1.py"
+      }
+    },
+    {
+      "name": "Edit the extrusion feature of the circle sketch to change the height from 1 meter to 1 cm.",
+      "feature_id": "Fx4JDE0nbDx8tes_1",
+      "type": "sketch",
+      "parameters": {
+        "script_path": "sessions/ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9/step_1_attempt_1.py"
+      }
+    },
+    {
+      "name": "Create a sketch on the top face of the existing cylinder with a circle of 1 cm diameter centered at the origin.",
+      "feature_id": "F1gA5HybTbQ8afn_2",
+      "type": "sketch",
+      "parameters": {
+        "script_path": "sessions/ecc7cf57-8bc1-4517-b5a5-8e6f003fa4a9/step_1_attempt_1.py"
+      }
+    }
+  ]
+}

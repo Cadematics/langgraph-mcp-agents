@@ -12,11 +12,10 @@
     "transport": "stdio"
   },
   "onshape_macros": {
-    "command": "./.venv/bin/python",
+    "command": "/home/momo/Desktop/simo_S76_25/learning/agy-cli-projects/langgraph_onshape_mcp_test/langgraph-mcp-agents/.venv/bin/python3",
     "args": [
       "mcp_server_onshape_macros.py"
     ],
-    
     "env": {
       "ONSHAPE_ACCESS_KEY": "on_bYfDyZ0QtxjnQOAqlSPTD",
       "ONSHAPE_SECRET_KEY": "aeSrt2XWfSFFTxOwiUMtHKnpaNNQfBrqAnekcX7VgSqeo2xL"
@@ -24,4 +23,3 @@
     "transport": "stdio"
   }
 }
-
